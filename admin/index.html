@@ -1,0 +1,1025 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Player Tracker</title>
+    <style>
+      :root {
+        --primary-color: #3a86ff;
+        --secondary-color: #8338ec;
+        --background-color: #f8f9fa;
+        --card-color: #ffffff;
+        --text-color: #212529;
+        --border-color: #dee2e6;
+        --online-color: #2ecc71;
+        --dark-mode-bg: #222;
+        --dark-mode-card: #333;
+        --dark-mode-text: #eee;
+      }
+
+      body {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        background-color: var(--background-color);
+        color: var(--text-color);
+        margin: 0;
+        padding: 0;
+        transition: background-color 0.3s, color 0.3s;
+      }
+
+      body.dark-mode {
+        background-color: var(--dark-mode-bg);
+        color: var(--dark-mode-text);
+      }
+
+      .container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 20px;
+      }
+
+      header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+        padding-bottom: 20px;
+        border-bottom: 1px solid var(--border-color);
+      }
+
+      header h1 {
+        margin: 0;
+        background: linear-gradient(45deg, var(--primary-color), var(--secondary-color));
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+        font-size: 2rem;
+      }
+
+      .controls {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+      }
+
+      .theme-switch {
+        display: inline-block;
+        position: relative;
+        width: 60px;
+        height: 30px;
+      }
+
+      .theme-switch input {
+        opacity: 0;
+        width: 0;
+        height: 0;
+      }
+
+      .slider {
+        position: absolute;
+        cursor: pointer;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: #ccc;
+        transition: .4s;
+        border-radius: 30px;
+      }
+
+      .slider:before {
+        position: absolute;
+        content: "";
+        height: 22px;
+        width: 22px;
+        left: 4px;
+        bottom: 4px;
+        background-color: white;
+        transition: .4s;
+        border-radius: 50%;
+      }
+
+      input:checked+.slider {
+        background-color: var(--primary-color);
+      }
+
+      input:checked+.slider:before {
+        transform: translateX(30px);
+      }
+
+      #status-container {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 20px;
+        padding: 15px;
+        border-radius: 8px;
+        background-color: var(--card-color);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+      }
+
+      body.dark-mode #status-container {
+        background-color: var(--dark-mode-card);
+      }
+
+      .status-indicator {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        background-color: #f44336;
+      }
+
+      .status-indicator.online {
+        background-color: var(--online-color);
+      }
+
+      .stats {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 20px;
+        margin-bottom: 20px;
+      }
+
+      .stat-card {
+        flex: 1;
+        min-width: 200px;
+        background-color: var(--card-color);
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        transition: transform 0.3s, box-shadow 0.3s;
+      }
+
+      body.dark-mode .stat-card {
+        background-color: var(--dark-mode-card);
+      }
+
+      .stat-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
+      }
+
+      .stat-card h3 {
+        margin-top: 0;
+        color: var(--primary-color);
+        font-size: 1.2rem;
+      }
+
+      .stat-card p {
+        font-size: 2rem;
+        font-weight: bold;
+        margin: 10px 0 0 0;
+      }
+
+      .search-container {
+        margin-bottom: 20px;
+      }
+
+      .search-box {
+        width: 100%;
+        padding: 10px;
+        border-radius: 4px;
+        border: 1px solid var(--border-color);
+        font-size: 16px;
+        background-color: var(--card-color);
+        color: var(--text-color);
+      }
+
+      body.dark-mode .search-box {
+        background-color: var(--dark-mode-card);
+        color: var(--dark-mode-text);
+        border-color: #444;
+      }
+
+      .player-table-container {
+        background-color: var(--card-color);
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        overflow-x: auto;
+      }
+
+      body.dark-mode .player-table-container {
+        background-color: var(--dark-mode-card);
+      }
+
+      .player-table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+
+      .player-table th {
+        text-align: left;
+        padding: 12px 15px;
+        background-color: var(--primary-color);
+        color: white;
+        position: sticky;
+        top: 0;
+      }
+
+      .player-table td {
+        padding: 10px 15px;
+        border-bottom: 1px solid var(--border-color);
+      }
+
+      body.dark-mode .player-table td {
+        border-bottom: 1px solid #444;
+      }
+
+      .player-table tr:hover {
+        background-color: rgba(0, 0, 0, 0.05);
+      }
+
+      body.dark-mode .player-table tr:hover {
+        background-color: rgba(255, 255, 255, 0.05);
+      }
+
+      .player-status-cell {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .player-action-buttons {
+        display: flex;
+        gap: 5px;
+      }
+
+      .action-button {
+        padding: 5px 10px;
+        border-radius: 4px;
+        border: none;
+        cursor: pointer;
+        font-size: 14px;
+        transition: background-color 0.3s;
+      }
+
+      .remove-btn {
+        background-color: #f44336;
+        color: white;
+      }
+
+      .announce-btn {
+        background-color: var(--primary-color);
+        color: white;
+      }
+
+      .action-button:hover {
+        opacity: 0.9;
+      }
+
+      .player-grid {
+        display: none;
+      }
+
+      .player-card {
+        background-color: var(--card-color);
+        border-radius: 8px;
+        padding: 20px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        transition: transform 0.3s, box-shadow 0.3s;
+        position: relative;
+      }
+
+
+      body.dark-mode .player-card {
+        background-color: var(--dark-mode-card);
+      }
+
+      .player-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
+      }
+
+      .player-card h3 {
+        margin-top: 0;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .player-status {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background-color: var(--online-color);
+        display: inline-block;
+      }
+
+      .player-card div {
+        margin: 8px 0;
+        display: flex;
+        justify-content: space-between;
+      }
+
+      .player-card div span:first-child {
+        font-weight: 500;
+        color: var(--secondary-color);
+      }
+
+      .player-card div span:last-child {
+        text-align: right;
+      }
+
+      .player-actions {
+        position: absolute;
+        top: 15px;
+        right: 15px;
+      }
+
+      .player-actions button {
+        background: none;
+        border: none;
+        cursor: pointer;
+        color: #777;
+        transition: color 0.3s;
+      }
+
+      .player-actions button:hover {
+        color: #f44336;
+      }
+
+      .hide {
+        display: none !important;
+      }
+
+      .loader {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 300px;
+      }
+
+      .loader div {
+        width: 20px;
+        height: 20px;
+        margin: 0 5px;
+        background: var(--primary-color);
+        border-radius: 50%;
+        animation: loader 1.5s infinite ease-in-out;
+      }
+
+      .loader div:nth-child(2) {
+        animation-delay: 0.2s;
+        background: var(--secondary-color);
+      }
+
+      .loader div:nth-child(3) {
+        animation-delay: 0.4s;
+      }
+
+      @keyframes loader {
+
+        0%,
+        100% {
+          transform: scale(0.3);
+        }
+
+        50% {
+          transform: scale(1);
+        }
+      }
+
+      .empty-state {
+        text-align: center;
+        padding: 40px;
+        background-color: var(--card-color);
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+      }
+
+      body.dark-mode .empty-state {
+        background-color: var(--dark-mode-card);
+      }
+
+      .empty-state h3 {
+        margin-top: 0;
+        color: var(--primary-color);
+      }
+
+      .timestamp {
+        font-size: 0.8rem;
+        color: #777;
+        text-align: right;
+        margin-top: 10px;
+      }
+
+      @media (max-width: 768px) {
+        .stats {
+          flex-direction: column;
+        }
+
+        .player-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      .tooltip {
+        position: relative;
+        display: inline-block;
+        cursor: help;
+      }
+
+      .tooltip .tooltip-text {
+        visibility: hidden;
+        width: 120px;
+        background-color: #555;
+        color: #fff;
+        text-align: center;
+        border-radius: 6px;
+        padding: 5px;
+        position: absolute;
+        z-index: 1;
+        bottom: 125%;
+        left: 50%;
+        margin-left: -60px;
+        opacity: 0;
+        transition: opacity 0.3s;
+      }
+
+      .tooltip:hover .tooltip-text {
+        visibility: visible;
+        opacity: 1;
+      }
+
+      .chart-container {
+        background-color: var(--card-color);
+        border-radius: 8px;
+        padding: 20px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        margin-bottom: 20px;
+        height: 300px;
+        position: relative;
+      }
+
+      body.dark-mode .chart-container {
+        background-color: var(--dark-mode-card);
+      }
+
+      .time-period-selector {
+        position: absolute;
+        top: 10px;
+        left: 10px;
+        display: flex;
+        gap: 5px;
+        z-index: 10;
+      }
+
+      .time-period-btn {
+        padding: 5px 15px;
+        background-color: #2c3e50;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 14px;
+      }
+
+      .time-period-btn.active {
+        background-color: var(--primary-color);
+      }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  </head>
+  <body>
+    <div class="container">
+      <header>
+        <h1>Player Tracker</h1>
+        <div class="controls">
+          <label class="theme-switch">
+            <input type="checkbox" id="theme-toggle">
+            <span class="slider"></span>
+          </label>
+          <span id="theme-label">Dark Mode</span>
+        </div>
+      </header>
+      <div id="status-container">
+        <div class="status-indicator" id="connection-status"></div>
+        <span id="status-text">Disconnected</span>
+      </div>
+      <div class="stats">
+        <div class="stat-card">
+          <h3>Active Players</h3>
+          <p id="active-players">0</p>
+        </div>
+        <div class="stat-card">
+          <h3>Unique Games</h3>
+          <p id="unique-games">0</p>
+        </div>
+        <div class="stat-card">
+          <h3>Last Updated</h3>
+          <p id="last-updated">-</p>
+        </div>
+        <div class="stat-card">
+          <h3>Data Management</h3>
+          <button id="remove-all-data" class="action-button remove-btn" style="margin-top: 10px; width: 100%;">Remove All Player Data</button>
+        </div>
+      </div>
+
+      <div class="chart-container">
+        <div class="time-period-selector">
+          <button class="time-period-btn active" data-period="1d">1d</button>
+          <button class="time-period-btn" data-period="3d">3d</button>
+          <button class="time-period-btn" data-period="1w">1w</button>
+        </div>
+        <canvas id="playerChart"></canvas>
+      </div>
+      <div id="player-container">
+        <div class="search-container">
+          <input type="text" id="player-search" class="search-box" placeholder="Search players by name, game, country...">
+        </div>
+
+        <div class="loader" id="loader">
+          <div></div>
+          <div></div>
+          <div></div>
+        </div>
+
+        <div class="empty-state hide" id="empty-state">
+          <h3>No Players Connected</h3>
+          <p>Waiting for connections...</p>
+        </div>
+
+        <div class="player-table-container hide" id="player-table-container">
+          <table class="player-table" id="player-table">
+            <thead>
+              <tr>
+                <th>Player</th>
+                <th>Game</th>
+                <th>Players</th>
+                <th>Place ID</th>
+                <th>Job ID</th>
+                <th>Executor</th>
+                <th>Version</th>
+                <th>Last Updated</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="player-tbody"></tbody>
+          </table>
+        </div>
+
+        <div class="player-grid hide" id="player-grid"></div>
+      </div>
+    </div>
+    <script>
+      document.addEventListener('DOMContentLoaded', function() {
+        const connectionStatus = document.getElementById('connection-status');
+        const statusText = document.getElementById('status-text');
+        const activePlayersEl = document.getElementById('active-players');
+        const uniqueGamesEl = document.getElementById('unique-games');
+        const lastUpdatedEl = document.getElementById('last-updated');
+        const playerGrid = document.getElementById('player-grid');
+        const loader = document.getElementById('loader');
+        const emptyState = document.getElementById('empty-state');
+        const themeToggle = document.getElementById('theme-toggle');
+        const themeLabel = document.getElementById('theme-label');
+        const removeAllDataButton = document.getElementById('remove-all-data');
+
+        let players = [];
+        let removedPlayers = [];
+        let intervalId = null;
+        let lastCheckTime = null;
+
+        let playerHistory = [];
+        let currentPeriod = '1d';
+        const maxHistoryPoints = {
+          '1d': 144,
+          '3d': 432,
+          '1w': 1008
+        };
+        themeToggle.addEventListener('change', function() {
+          if (this.checked) {
+            document.body.classList.add('dark-mode');
+            themeLabel.textContent = 'Light Mode';
+            localStorage.setItem('theme', 'dark');
+          } else {
+            document.body.classList.remove('dark-mode');
+            themeLabel.textContent = 'Dark Mode';
+            localStorage.setItem('theme', 'light');
+          }
+        });
+        if (localStorage.getItem('theme') === 'dark') {
+          document.body.classList.add('dark-mode');
+          themeToggle.checked = true;
+          themeLabel.textContent = 'Light Mode';
+        }
+
+        function formatDate(date) {
+          if (!(date instanceof Date)) return '-';
+          const hours = date.getHours().toString().padStart(2, '0');
+          const minutes = date.getMinutes().toString().padStart(2, '0');
+          const seconds = date.getSeconds().toString().padStart(2, '0');
+          return `${hours}:${minutes}:${seconds}`;
+        }
+
+        function showLoader() {
+          loader.classList.remove('hide');
+        }
+
+        function hideLoader() {
+          loader.classList.add('hide');
+        }
+
+        function showEmptyState() {
+          emptyState.classList.remove('hide');
+        }
+
+        function hideEmptyState() {
+          emptyState.classList.add('hide');
+        }
+
+        function showPlayerGrid() {
+          hideLoader();
+          playerTableContainer.classList.remove('hide');
+        }
+
+        function hidePlayerGrid() {
+          playerTableContainer.classList.add('hide');
+        }
+
+        function createPlayerCard(player) {
+          const card = document.createElement('div');
+          card.className = 'player-card';
+          card.id = `player-${player.playerName}-${player.jobId}`;
+          const header = document.createElement('h3');
+          const status = document.createElement('span');
+          status.className = 'player-status';
+          header.appendChild(status);
+          header.appendChild(document.createTextNode(player.displayName || player.playerName));
+          card.appendChild(header);
+          const actions = document.createElement('div');
+          actions.className = 'player-actions';
+          const removeBtn = document.createElement('button');
+          removeBtn.innerHTML = '&times;';
+          removeBtn.title = 'Remove player';
+          removeBtn.onclick = function() {
+            removedPlayers.push({
+              playerName: player.playerName,
+              jobId: player.jobId
+            });
+            players = players.filter(p => !(p.playerName === player.playerName && p.jobId === player.jobId));
+            updatePlayerCount();
+            updatePlayerGrid();
+          };
+          actions.appendChild(removeBtn);
+          card.appendChild(actions);
+          addDetailRow(card, 'Username', player.playerName);
+          addDetailRow(card, 'Game', player.gameName);
+          addDetailRow(card, 'Players', `${player.serverPlayers}/${player.maxPlayers}`);
+          addDetailRow(card, 'Place ID', player.placeId);
+          addDetailRow(card, 'Job ID', player.jobId);
+          addDetailRow(card, 'Country', player.country);
+          addDetailRow(card, 'Executor', player.executor);
+          addDetailRow(card, 'Version', player.version);
+          const timestamp = document.createElement('div');
+          timestamp.className = 'timestamp';
+          timestamp.textContent = formatDate(new Date(player.lastUpdated));
+          card.appendChild(timestamp);
+          return card;
+        }
+
+        function addDetailRow(card, label, value) {
+          if (label === 'Current Time' || label === 'Country') return;
+
+          const row = document.createElement('div');
+          const labelEl = document.createElement('span');
+          labelEl.textContent = label + ':';
+          const valueEl = document.createElement('span');
+          valueEl.textContent = value;
+          row.appendChild(labelEl);
+          row.appendChild(valueEl);
+          card.appendChild(row);
+        }
+
+        let playerChart;
+
+        function createChart() {
+          const ctx = document.getElementById('playerChart').getContext('2d');
+          playerChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+              labels: [],
+              datasets: [{
+                label: 'Active Players',
+                data: [],
+                borderColor: '#3a86ff',
+                backgroundColor: 'rgba(58, 134, 255, 0.1)',
+                tension: 0.3,
+                fill: true
+              }]
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              scales: {
+                y: {
+                  beginAtZero: true,
+                  ticks: {
+                    precision: 0
+                  }
+                },
+                x: {
+                  ticks: {
+                    maxRotation: 0,
+                    autoSkip: true,
+                    maxTicksLimit: 10
+                  }
+                }
+              },
+              animation: {
+                duration: 500
+              },
+              plugins: {
+                legend: {
+                  display: false
+                },
+                tooltip: {
+                  callbacks: {
+                    title: function(tooltipItems) {
+                      const item = tooltipItems[0];
+                      const date = new Date(playerHistory[item.dataIndex].timestamp);
+                      return date.toLocaleString();
+                    }
+                  }
+                }
+              }
+            }
+          });
+
+          document.querySelectorAll('.time-period-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+              document.querySelectorAll('.time-period-btn').forEach(b => b.classList.remove('active'));
+              this.classList.add('active');
+              currentPeriod = this.getAttribute('data-period');
+              updateChartWithPeriod();
+            });
+          });
+        }
+
+        function updateChartWithPeriod() {
+          if (!playerChart) return;
+
+          const maxPoints = maxHistoryPoints[currentPeriod];
+
+          const displayData = playerHistory.length <= maxPoints 
+            ? playerHistory 
+            : playerHistory.slice(playerHistory.length - maxPoints);
+
+          playerChart.data.labels = displayData.map(point => {
+            const date = new Date(point.timestamp);
+            return formatDate(date);
+          });
+          playerChart.data.datasets[0].data = displayData.map(point => point.count);
+          playerChart.update();
+        }
+
+        function updateChart(count) {
+          if (!playerChart) return;
+
+          const now = new Date();
+
+          const shouldAddDataPoint = playerHistory.length === 0 || 
+            (now - new Date(playerHistory[playerHistory.length - 1].timestamp)) >= 600000;
+
+          if (shouldAddDataPoint) {
+            playerHistory.push({
+              timestamp: now,
+              count: count
+            });
+
+            localStorage.setItem('playerHistory', JSON.stringify(playerHistory));
+
+            updateChartWithPeriod();
+          }
+        }
+
+        function updatePlayerCount() {
+          activePlayersEl.textContent = players.length;
+          const uniqueGames = new Set();
+          players.forEach(player => {
+            uniqueGames.add(player.gameName);
+          });
+          uniqueGamesEl.textContent = uniqueGames.size;
+
+          updateChart(players.length);
+
+          if (players.length === 0) {
+            showEmptyState();
+            hidePlayerGrid();
+          } else {
+            hideEmptyState();
+            showPlayerGrid();
+          }
+        }
+
+        function updatePlayerGrid() {
+          playerGrid.innerHTML = '';
+          players.forEach(player => {
+            const playerCard = createPlayerCard(player);
+            playerGrid.appendChild(playerCard);
+          });
+        }
+
+        function updateLastUpdated() {
+          lastUpdatedEl.textContent = formatDate(new Date());
+          lastCheckTime = new Date();
+        }
+
+        const playerTableContainer = document.getElementById('player-table-container');
+        const playerTable = document.getElementById('player-table');
+        const playerTbody = document.getElementById('player-tbody');
+        const playerSearch = document.getElementById('player-search');
+
+
+        function updatePlayerTable(searchTerm = '') {
+          playerTbody.innerHTML = '';
+
+          const filteredPlayers = searchTerm ? 
+            players.filter(player => 
+              Object.values(player).some(value => 
+                value && typeof value === 'string' && value.toLowerCase().includes(searchTerm)
+              )
+            ) : players;
+
+          filteredPlayers.forEach(player => {
+            const row = document.createElement('tr');
+
+            const playerCell = document.createElement('td');
+            const playerStatusWrapper = document.createElement('div');
+            playerStatusWrapper.className = 'player-status-cell';
+            const statusIndicator = document.createElement('span');
+            statusIndicator.className = 'player-status';
+            playerStatusWrapper.appendChild(statusIndicator);
+
+            const playerDisplayText = player.displayName && player.displayName !== player.playerName ? 
+                `${player.displayName}(@${player.playerName})` : player.playerName;
+            playerStatusWrapper.appendChild(document.createTextNode(playerDisplayText));
+            playerCell.appendChild(playerStatusWrapper);
+
+            const gameCell = document.createElement('td');
+            gameCell.textContent = player.gameName;
+
+            const playersCell = document.createElement('td');
+            playersCell.textContent = `${player.serverPlayers}/${player.maxPlayers}`;
+
+            const placeIdCell = document.createElement('td');
+            placeIdCell.textContent = player.placeId;
+
+            const jobIdCell = document.createElement('td');
+            jobIdCell.textContent = player.jobId;
+
+
+
+            const executorCell = document.createElement('td');
+            executorCell.textContent = player.executor;
+
+            const versionCell = document.createElement('td');
+            versionCell.textContent = player.version || 'Unknown';
+
+            const updatedCell = document.createElement('td');
+            updatedCell.textContent = formatDate(new Date(player.lastUpdated));
+
+            const actionsCell = document.createElement('td');
+            const actionButtons = document.createElement('div');
+            actionButtons.className = 'player-action-buttons';
+
+            const removeBtn = document.createElement('button');
+            removeBtn.textContent = 'Remove';
+            removeBtn.className = 'action-button remove-btn';
+            removeBtn.addEventListener('click', function() {
+              const playerId = `${player.playerName}-${player.jobId}`;
+              if (confirm(`Are you sure you want to permanently remove ${player.playerName}?`)) {
+                fetch(`/api/player/${playerId}`, {
+                  method: 'DELETE',
+                  headers: {
+                    'Accept': 'application/json'
+                  }
+                })
+                .then(response => {
+                  if (response.ok) {
+                    players = players.filter(p => !(p.playerName === player.playerName && p.jobId === player.jobId));
+                    updatePlayerCount();
+                    updatePlayerTable(playerSearch.value.toLowerCase());
+                  } else {
+                    alert('Failed to remove player');
+                  }
+                })
+                .catch(error => {
+                  console.error('Error removing player:', error);
+                  alert('Error removing player');
+                });
+              }
+            });
+
+            actionButtons.appendChild(removeBtn);
+            actionsCell.appendChild(actionButtons);
+
+            row.appendChild(playerCell);
+            row.appendChild(gameCell);
+            row.appendChild(playersCell);
+            row.appendChild(placeIdCell);
+            row.appendChild(jobIdCell);
+            row.appendChild(executorCell);
+            row.appendChild(versionCell);
+            row.appendChild(updatedCell);
+            row.appendChild(actionsCell);
+
+            playerTbody.appendChild(row);
+          });
+        }
+
+        function fetchPlayerData() {
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 5000);
+
+          fetch('/api/players', { 
+            method: 'GET',
+            headers: {
+              'Accept': 'application/json',
+              'Cache-Control': 'no-cache'
+            },
+            signal: controller.signal
+          }).then(response => {
+            clearTimeout(timeoutId);
+            if (response.ok) {
+              connectionStatus.classList.add('online');
+              statusText.textContent = 'Connected';
+              return response.json();
+            } else {
+              throw new Error(`Failed to fetch player data: ${response.status}`);
+            }
+          }).then(data => {
+            if (!Array.isArray(data)) {
+              throw new Error('Invalid data format received');
+            }
+
+            players = data.filter(player => {
+              return !removedPlayers.some(rp => rp.playerName === player.playerName && rp.jobId === player.jobId);
+            });
+            updatePlayerCount();
+            updatePlayerTable(playerSearch.value.toLowerCase());
+            updateLastUpdated();
+            hideLoader();
+          }).catch(error => {
+            clearTimeout(timeoutId);
+            console.error('Error fetching player data:', error);
+            connectionStatus.classList.remove('online');
+            statusText.textContent = error.name === 'AbortError' ? 'Request Timeout' : 'Connection Error';
+            hideLoader();
+          });
+        }
+
+        function startPolling() {
+          showLoader();
+
+          const savedHistory = localStorage.getItem('playerHistory');
+          if (savedHistory) {
+            try {
+              playerHistory = JSON.parse(savedHistory);
+              playerHistory = playerHistory.filter(point => point && point.timestamp);
+
+              const oneWeekAgo = new Date();
+              oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+              playerHistory = playerHistory.filter(point => new Date(point.timestamp) >= oneWeekAgo);
+            } catch (e) {
+              console.error('Error loading player history:', e);
+              playerHistory = [];
+            }
+          }
+
+          createChart();
+          fetchPlayerData();
+          // Poll every 10 seconds instead of 10 minutes for more immediate updates
+          intervalId = setInterval(fetchPlayerData, 10000);
+        }
+        removeAllDataButton.addEventListener('click', function() {
+          if (confirm('Are you sure you want to remove ALL player data?')) {
+            fetch('/api/players/all', {
+              method: 'DELETE',
+              headers: {
+                'Content-Type': 'application/json'
+              }
+            })
+              .then(response => {
+                if (response.ok) {
+                  players = [];
+                  removedPlayers = [];
+                  updatePlayerCount();
+                  updatePlayerTable();
+                  alert('All player data removed successfully!');
+                } else {
+                  alert('Failed to remove all player data: ' + response.status);
+                  console.error('Failed to remove data:', response);
+                }
+              })
+              .catch(error => {
+                console.error('Error removing all player data:', error);
+                alert('Error removing all player data: ' + error.message);
+              });
+          }
+        });
+        startPolling();
+      });
+    </script>
+  </body>
+</html>

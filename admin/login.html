@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Login</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f8f9fa;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .login-container {
+            background-color: #fff;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 400px;
+        }
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+            color: #3a86ff;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+        }
+        input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 16px;
+        }
+        button {
+            width: 100%;
+            padding: 12px;
+            background-color: #3a86ff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 500;
+        }
+        button:hover {
+            background-color: #2d6fd9;
+        }
+        .error-message {
+            color: #dc3545;
+            margin-top: 15px;
+            text-align: center;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <h2>Admin Login</h2>
+        <form id="loginForm">
+            <input type="hidden" name="_csrf" id="csrfToken">
+            <div class="form-group">
+                <label for="username">Username:</label>
+                <input type="text" id="username" name="username" required>
+            </div>
+            <div class="form-group">
+                <label for="password">Password:</label>
+                <input type="password" id="password" name="password" required>
+            </div>
+            <button type="submit">Login</button>
+            <div id="error-message"></div>
+        </form>
+    </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            try {
+                const response = await fetch('/csrf-token');
+                if (!response.ok) {
+                    throw new Error('Failed to fetch CSRF token');
+                }
+                const { csrfToken } = await response.json();
+                document.getElementById('csrfToken').value = csrfToken;
+            } catch (error) {
+                console.error('Failed to fetch CSRF token:', error);
+                document.getElementById('error-message').textContent = 'Failed to initialize login form';
+                document.getElementById('error-message').style.display = 'block';
+            }
+        });
+
+        document.getElementById('loginForm').addEventListener('submit', async (event) => {
+            event.preventDefault();
+            const errorMessage = document.getElementById('error-message');
+            errorMessage.style.display = 'block';
+            errorMessage.textContent = 'Logging in...';
+
+            try {
+                const username = document.getElementById('username').value;
+                const password = document.getElementById('password').value;
+                const csrfToken = document.getElementById('csrfToken').value;
+
+                console.log('Attempting login with username:', username);
+
+                const response = await fetch('/admin/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'CSRF-Token': csrfToken
+                    },
+                    body: JSON.stringify({ username, password }),
+                    credentials: 'same-origin'
+                });
+
+                console.log('Login response status:', response.status);
+
+                const data = await response.json();
+                console.log('Login response data:', data);
+
+                if (data.success) {
+                    errorMessage.textContent = 'Login successful! Redirecting...';
+                    errorMessage.style.color = 'green';
+
+                    // Small delay before redirect
+                    setTimeout(() => {
+                        window.location.href = '/admin/tracker';
+                    }, 1000);
+                } else {
+                    errorMessage.style.color = '#dc3545';
+                    errorMessage.textContent = data.error || 'Login failed. Please check your credentials.';
+                }
+            } catch (error) {
+                console.error('Login error:', error);
+                errorMessage.style.color = '#dc3545';
+                errorMessage.textContent = 'Login failed. Please try again. Error: ' + error.message;
+            }
+        });
+    </script>
+</body>
+</html>
